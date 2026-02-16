@@ -3,35 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>RSVP Loader</title>
-  <style>
-    body {
-      background: #000;
-      color: #fff;
-      font-family: system-ui, sans-serif;
-      padding: 40px;
-    }
-    textarea {
-      width: 100%;
-      height: 200px;
-      background: #111;
-      color: #fff;
-      border: 1px solid #333;
-      padding: 10px;
-      border-radius: 6px;
-    }
-    button {
-      margin-top: 20px;
-      padding: 12px 20px;
-      background: #1d4ed8;
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 16px;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="loader-page">
 
   <h1>RSVP Reader — Load Text</h1>
 
@@ -44,62 +18,6 @@
   <button id="startBtn">Start Reading</button>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
-  <script>
-    const textInput = document.getElementById("textInput");
-    const pdfInput = document.getElementById("pdfInput");
-    const startBtn = document.getElementById("startBtn");
-
-    function sanitize(text) {
-      return text.replace(/\s+/g, " ").trim();
-    }
-
-    function detectChapters(text) {
-      const lines = text.split(/\n+/);
-      const chapters = [];
-
-      lines.forEach((line, i) => {
-        if (/chapter|CHAPTER|Chapter/.test(line) || line.length > 60) {
-          chapters.push({ index: i, title: line.trim() });
-        }
-      });
-
-      return chapters;
-    }
-
-    async function loadPDF(file) {
-      const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-      let full = "";
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        full += content.items.map(x => x.str).join(" ") + " ";
-      }
-      return sanitize(full);
-    }
-
-    startBtn.onclick = async () => {
-      let text = textInput.value.trim();
-
-      if (pdfInput.files.length > 0) {
-        text = await loadPDF(pdfInput.files[0]);
-      }
-
-      if (!text) {
-        alert("Please paste text or upload a PDF.");
-        return;
-      }
-
-      const chapters = detectChapters(text);
-
-      localStorage.setItem("rsvp_text", text);
-      localStorage.setItem("rsvp_chapters", JSON.stringify(chapters));
-      localStorage.setItem("rsvp_progress", "0");
-
-      window.location.href = "reader.html";
-    };
-  </script>
-
+  <script src="script.js"></script>
 </body>
 </html>
