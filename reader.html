@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RSVP Reader</title>
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, sans-serif;
+    }
+    .top {
+      padding: 10px;
+      background: #050505;
+      border-bottom: 1px solid #222;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .pause-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid #444;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+    }
+    .pause-btn.paused {
+      background: #b91c1c;
+      border-color: #f87171;
+    }
+    input, select {
+      background: #111;
+      border: 1px solid #333;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .viewer {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .word {
+      font-size: 64px;
+    }
+    .pivot { color: red; }
+    .highlight { background: #333; padding: 4px 8px; border-radius: 4px; }
+    .underline { border-bottom: 4px solid red; }
+    .progress {
+      height: 6px;
+      background: #222;
+      width: 100%;
+      position: relative;
+    }
+    .progress-bar {
+      height: 100%;
+      background: #3b82f6;
+      width: 0%;
+      transition: width 0.2s linear;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top">
+    <button id="pauseBtn" class="pause-btn">Pause</button>
+    <label>WPM: <input type="number" id="wpm" value="360"></label>
+    <label>Highlight:
+      <select id="mode">
+        <option value="pivot">Pivot Letter</option>
+        <option value="highlight">Whole Word</option>
+        <option value="underline">Underline</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="progress">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+
+  <div class="viewer">
+    <div id="wordBox" class="word"></div>
+  </div>
+
+  <script>
+    const pauseBtn = document.getElementById("pauseBtn");
+    const wpmInput = document.getElementById("wpm");
+    const modeSelect = document.getElementById("mode");
+    const wordBox = document.getElementById("wordBox");
+    const progressBar = document.getElementById("progressBar");
+
+    let text = localStorage.getItem("rsvp_text") || "";
+    let chapters = JSON.parse(localStorage.getItem("rsvp_chapters") || "[]");
+    let words = text.split(" ").filter(Boolean);
+
+    let index = parseInt(localStorage.getItem("rsvp_progress") || "0");
+    let paused = false;
+    let timer = null;
+
+    function pivotIndex(word) {
+      if (word.length <= 1) return 0;
+      if (word.length <= 5) return 1;
+      if (word.length <= 9) return 2;
+      if (word.length <= 13) return 3;
+      return 4;
+    }
+
+    function renderWord(word) {
+      const mode = modeSelect.value;
+
+      if (mode === "pivot") {
+        const p = pivotIndex(word);
+        wordBox.innerHTML =
+          `<span>${word.slice(0, p)}</span><span class="pivot">${word[p]}</span><span>${word.slice(p+1)}</span>`;
+      }
+
+      if (mode === "highlight") {
+        wordBox.innerHTML = `<span class="highlight">${word}</span>`;
+      }
+
+      if (mode === "underline") {
+        wordBox.innerHTML = `<span class="underline">${word}</span>`;
+      }
+    }
+
+    function isSentenceEnd(word) {
+      return /[.!?]$/.test(word);
+    }
+
+    function updateProgress() {
+      const pct = (index / words.length) * 100;
+      progressBar.style.width = pct + "%";
+      localStorage.setItem("rsvp_progress", index);
+    }
+
+    function next() {
+      if (paused) return;
+
+      if (index >= words.length) {
+        paused = true;
+        pauseBtn.classList.add("paused");
+        pauseBtn.textContent = "Resume";
+        return;
+      }
+
+      const word = words[index];
+      renderWord(word);
+      updateProgress();
+      index++;
+
+      clearTimeout(timer);
+
+      let delay = 60000 / parseInt(wpmInput.value);
+
+      if (isSentenceEnd(word)) delay *= 2.2;
+
+      timer = setTimeout(next, delay);
+    }
+
+    pauseBtn.onclick = () => {
+      paused = !paused;
+      if (paused) {
+        pauseBtn.classList.add("paused");
+        pauseBtn.textContent = "Resume";
+      } else {
+        pauseBtn.classList.remove("paused");
+        pauseBtn.textContent = "Pause";
+        next();
+      }
+    };
+
+    next();
+  </script>
+
+</body>
+</html>
